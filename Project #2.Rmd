@@ -1,0 +1,403 @@
+---
+title: "Modeling Bitcoin and Crypotcurrency"
+author: "Robert Mead"
+date: "7/22/2021"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+\pagebreak
+
+\section{Introduction}
+Bitcoin allows for the buying, selling and exchanging of the cryptocurrency without the intermediary of a bank. Though Bitcoin does not rely on central authorities, like banks, it relies on block chain to execute transactions.  The foundations of Bitcoin are based on the digital record, block chain. Block chain is a public record of Bitcoin transactions, where each chronological transaction is a called a block. The block chain is a public record for all Bitcoin users creating a permanent chain of transactions contributed by anyone within the Bitcoin organization. Bitcoin miners verify the transactions that have been added to the block chain through the process called proof work. In Bitcoin's genesis, the proof work was manageable for average computers to solve the mathematical problems to ensure verification. Through the increase in popularity, the proof work for verification of blocks in the block chain have become more difficult and require more computing power. Each bitcoin that a user possesses is stored as a file in a digital wallet paired with a set of public and private keys. These keys allow for different actions with users bitcoin. A private key is a randomly generated string of numbers and letters that allow the bitcoin user to buy, sell or trade their bitcoin. While a public key is a cryptographic code that allows bitcoin users to receive bitcoin to their account.Typically used as an alternate to investments in stocks and bonds, Bitcoin is used to diversify investment portfolios. 
+
+Cryptocurrency Indices are designed to bring more clarity to an everchanging market. Cryptocurrency indices, like Bitcoin, are created using pricing data from a block chain. The S&P Cryptocurrency Index Series were created because of the emergence and growth of cryptocurrencies. They are becoming widely accepted and recognized where investors are incorporating cryptocurrencies into their portfolios. The Bitcoin Index is designed to measure the performance of a single bitcoin traded in US Dollars. 
+
+The goal of this paper is to analyze the historical trends of Bitcoin Closing Prices on the interval from January 1st, 2018 to June 28th, 2021. Through the analysis of the closing prices an options analysis will be applied to a Bitcoin Index to analyze how the value of Bitcoin will change over time using the Black-Scholes-Merton pricing formula. 
+
+\section{Historical Data Analysis}
+To understand the volatility of Bitcoin in the public market a time series analysis will be applied to the closing value of Bitcoin on the time interval of January 1st, 2018 to June 28th, 2021. The time series analysis will bring information that will be utilized in other processes throughout the analysis. From the time series, the closing value is around \$10,000 on the interval from January 2018 to January 2021 with local maximums and local minimums never exceeding \$20,000 or below \$0. The time series shows the volatility of the closing price of Bitcoin with the rapid increasing in closing prices from January 2021 to March of 2021. Similarly, the rapid decreasing from March 2021 to June 2021 also is a signal of the volatility of the closing price. 
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+#packages
+library('quantmod')
+library('fBasics')
+library('dplyr')
+library('forecast')
+library('tseries')
+
+#loading BTC
+sp500 <- new.env()
+getSymbols('BTC-USD', env = sp500,src="yahoo",from = as.Date('2018-01-01'),to = as.Date("2021-06-28"))
+BTC <- sp500$`BTC-USD`
+BTCClose <- BTC$`BTC-USD.Close`
+BTCClose <- na.omit(BTCClose)
+
+#Graphics
+#i.) timeseries of BTCAdj
+plot.xts(BTCClose,main = "Bitcoin Price Time Series \n From January 2018 to June 2021",
+         xlab = "Date", ylab = "Price")
+```
+
+To respond to the extreme observations recorded in the daily closing values from January 2021 to June 2021 taking the logarithm of the data set will account and provide clarity to the data set. The time series of the Log Daily Closing of Bitcoin shows that is mean reverting around zero throughout the entirety of the interval.The observations in the time series stay within $\pm$ 0.02 of the mean  There are extreme observations in between the months of January 2020 and July 2020. Overall, the Log Daily Closing of Bitcoin is showing that it is weakly stationary by inspection because the time series in mean reverting to zero and bounded (except for the extreme observation). 
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+#packages
+library('quantmod')
+library('fBasics')
+library('dplyr')
+library('forecast')
+library('tseries')
+
+#loading BTC
+sp500 <- new.env()
+getSymbols('BTC-USD', env = sp500,src="yahoo",from = as.Date('2018-01-01'),to = as.Date("2021-06-28"))
+BTC <- sp500$`BTC-USD`
+BTCClose <- BTC$`BTC-USD.Close`
+BTCClose <- na.omit(BTCClose)
+
+#ii.) timeseries of log(BTCClose)
+LogBTCClose <- log(BTCClose)
+dailyLogBTCClose <- dailyReturn(LogBTCClose)
+plot.xts(dailyLogBTCClose, main = "Daily Log Returns of Bitcoin \n From January 2018 to June 2021", xlab = "Day", ylab = "Price")
+```
+
+To ensure that the time series data of the Log Daily Closing Values of Bitcoin are stationary it is required to perform precautionary steps. The first set of visualizations below are a Lag Plot and Auto Correlation Function Plot on the time series data of the Daily Closing Prices of Bitcoin. A lag plot is useful in determining if a data set is random, and further using an autocorrelation function (ACF) plot to assess if the time series data set shows autocorrelation. Having an autocorrelation coefficient towards zero shows that a data set is random and that two random variables do not depend on each other. If the time series data is stationary, the autocorrelation coefficient will show a correlation close to zero, meaning that there is no correlation between the two random variables in the data set. Below, the lag plot and the ACF plot for the time series data, Closing Values of Bitcoin from January 2018 to June 2021 show the important information regarding the time series. The Lag Plot below shows that there is a strong linear pattern within the the standardized time series data for the closing prices of Bitcoin. Since there is a strong linear pattern present on the lag plot this suggests that there is a strong autocorrelation. The autocorrelation (ACF) plot for the standardized closing prices of Bitcoin show how the relation the two random variables have as time progresses. Initially, the correlation between the closing prices and time are heavily correlated with a high initial  value in the ACF plot.As time progresses through the observations the ACF plot trends downward and towards the ACF coefficient of zero, showing that there is no relationship between the closing price and time. Since the ACF plot shows no relationship between the two random variables, the time series can be classified as stationary.To confirm the results of the Lag Plot and the ACF Plot, the Augmented Dickey-Fuller (ADF) Test is performed. The Augmented Dickey-Fuller Test is a common statistical test used to determine if a time series is stationary. Executing the ADF Test shows that the time series for the Standardized Closing Prices of Bitcoin are stationary.
+```{r,echo = FALSE,message=FALSE,warning=FALSE}
+#packages
+library('quantmod')
+library('fBasics')
+library('dplyr')
+library('forecast')
+library('tseries')
+
+#loading BTC
+sp500 <- new.env()
+getSymbols('BTC-USD', env = sp500,src="yahoo",from = as.Date('2018-01-01'),to = as.Date("2021-06-28"))
+BTC <- sp500$`BTC-USD`
+BTCClose <- BTC$`BTC-USD.Close`
+BTCClose <- na.omit(BTCClose)
+
+z <- (BTCClose - mean(BTCClose))/sd(BTCClose)
+
+lag.plot(z, main = "Lag Plot of Standardized Bitcoin Closing Price",diag.col = "forest green")
+abline(v=0,h=0)
+acf(z, main = "ACF for Standardized BTC Closing Price",xlab ="Lag Number",
+    ylab = "ACF",lag.max = length(z))
+```
+
+The Lag Plot and ACF Plot for the Log Standardized Daily Closing Values of Bitcoin show information about the time series. The Lag Plot shows a different perspective than the previous Lag Plot. The Lag Plot for the Log Standardized Daily Closing Values of Bitcoin show that there is randomness, because there is no pattern among the data set, unlike the Lag Plot of the Standardized Closing Values of Bitcoin. The randomness of the data on the Lag Plot shows that the data is random as well. The ACF Plot shows that the dependence on the two random variables have for eachother drastically decreases throughout the time interval. Having the most of the values close to zero shows that there is no correltaion between the two variables, and showing that the Log Standardized Daily Closing Values of Bitcoin are stationary.  The ADF Test can confirm that the Log Standardized Daily Closing Values of Bitcoin is also a stationary time series.
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+#packages
+library('quantmod')
+library('fBasics')
+library('dplyr')
+library('forecast')
+library('tseries')
+
+#loading BTC
+sp500 <- new.env()
+getSymbols('BTC-USD', env = sp500,src="yahoo",from = as.Date('2018-01-01'),to = as.Date("2021-06-28"))
+BTC <- sp500$`BTC-USD`
+BTCClose <- BTC$`BTC-USD.Close`
+BTCClose <- na.omit(BTCClose)
+
+#ii.) timeseries of log(BTCClose)
+LogBTCClose <- log(BTCClose)
+dailyLogBTCClose <- dailyReturn(LogBTCClose)
+z_1 <- (dailyLogBTCClose - mean(dailyLogBTCClose))/sd(dailyLogBTCClose)
+
+lag.plot(z_1,main = "Lag Plot of Standardized Log Daily Closing BTC Price ",diag.col = "forest green")
+abline(v=0,h=0)
+acf(z_1,lag.max = length(z_1), xlab ="Lag Number",
+    ylab = "ACF",main = "ACF for Standardized Log BTC Closing Price")
+
+adf.test(z)
+adf.test(z-1)
+```
+
+Since the log daily closing values are weakly stationary, based on the criterion stated above, the invariant distribution of the time series can be found. In order to execute this, the histogram of the Log Daily Closing Values of Bitcoin can be compared against a histogram with a normal distribution. To compare the Log Standardized Daily Closing Values of Bitcoin to the normal distribution the time series data is standardized.  The histogram below is centered around the mean zero. Overlapped with the density of a standard normal distribution it is apparent that the variance of the time series is much smaller than that of the variance of the standard normal distribution. The statistics of the Log Standardized Daily Closing Values of Bitcoin can be compared to that of the Standard Normal Distribution. The ADF Test can confirm that the Log Standardized  Closing Values of Bitcoin is also a stationary time series. The sample mean of the Log Standardized Closing Values is calculated to be $-9.854894\cdot 10^{-18}$, with a true mean of $-3.60085\cdot 10^{-15}$. The sample variance was $-7.628003\cdot 10^{-18}$ and the true variance was $-2.08964\cdot 10^{-20}$. The skewness of the Log Daily Returns was -1.281827 and the excess kurtosis was -13.395139. 
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+#packages
+library('quantmod')
+library('fBasics')
+library('dplyr')
+library('forecast')
+library('tseries')
+
+#loading BTC
+sp500 <- new.env()
+getSymbols('BTC-USD', env = sp500,src="yahoo",from = as.Date('2018-01-01'),to = as.Date("2021-06-28"))
+BTC <- sp500$`BTC-USD`
+BTCClose <- BTC$`BTC-USD.Close`
+BTCClose <- na.omit(BTCClose)
+
+#ii.) timeseries of log(BTCClose)
+LogBTCClose <- log(BTCClose)
+dailyLogBTCClose <- dailyReturn(LogBTCClose)
+z_1 <- (dailyLogBTCClose - mean(dailyLogBTCClose))/sd(dailyLogBTCClose)
+
+hist(z_1,breaks = 25,freq = FALSE,
+     main = "Histogram of Log Daily Closing Values \n For Bitcoin from January 2018 to June 2021",
+     xlab = "Standardized Log Daily Closing Values")
+curve(dnorm(x,0,1),col = "red",add = TRUE)
+```
+
+\section{Options Analysis}
+The put-call parity of stocks are important to calculate because it shows how the price of the call and put options must be consistent when the strike and expiry are the same. Establishing put-call parity leaves an opportunity form arbitrage in the market. The graphs of the put-call parity show horizontal lines on three different pricing points. The fact that the put-call parity prices are horizontal show that the put-call parity between the Call and Put Options of Bitcoin are equivalent, mostly. 
+```{r,echo=FALSE,message=FALSE,error=FALSE,warning=FALSE,results=FALSE}
+#Packages
+library('pins')
+library('skimr')
+library("ragtop")
+library('ggplot2')
+library("ggthemes")
+
+#loading the data
+library('readxl')
+Options_Data_Derebit_Compiled <- read_excel("Options_Data_Derebit_Compiled.xlsx")
+
+#Renaming Two Columns
+colnames(Options_Data_Derebit_Compiled)[5] <- 'USD Call Price'
+colnames(Options_Data_Derebit_Compiled)[7] <- "USD Put Price"
+colnames(Options_Data_Derebit_Compiled)
+
+#declaring variables
+S_col <- Options_Data_Derebit_Compiled[[1]]
+T_col <- Options_Data_Derebit_Compiled[[2]]/365
+K_col <- Options_Data_Derebit_Compiled[[3]]
+CP <- Options_Data_Derebit_Compiled[[5]]
+PP <- Options_Data_Derebit_Compiled[[7]]
+predicted_CP <- rep(0,nrow(Options_Data_Derebit_Compiled))
+predicted_PP <- rep(0,nrow(Options_Data_Derebit_Compiled))
+
+#Computing prices of calls and puts
+#call options from the data set
+for (i in 1:77) {
+  predicted_CP[i] <- blackscholes(1,S0=S_col[i], K = K_col[i], r = 0.05, time = T_col[i],vola = 1)
+}
+
+#put options from the data set
+for (j in 1:77) {
+  predicted_PP[j] <- blackscholes(-1,S0 = S_col[j],K = K_col[j],r = 0.05, time = T_col[j],vola = 1)
+}
+
+#put-call parity
+putcallparP <- function(s,T,K,C,r){
+  (C-s)+(K*exp(-r*T))
+}
+putcallparC <- function(s,T,K,P,r){
+  (P+s)-(K*exp(-r*T))
+}
+priceminus_strike <- function(s,K,T,r){
+  s-K*exp(-r*T)
+}
+callminusput <- function(c,p){
+  c-p
+}
+parity_put <- rep(0,length(predicted_CP))
+parity_call <- rep(0,length(predicted_PP))
+s_kexp <- rep(0,length(predicted_CP))
+c_p <- rep(0,length(predicted_CP))
+c_p_true <- rep(0, length(predicted_CP))
+
+for (i in 1:length(predicted_PP)) {
+  parity_put[i] <- putcallparP(S_col[[i]], T_col[[i]],K_col[[i]],predicted_CP[[i]],.05)
+  parity_call[i] <- putcallparC(S_col[[i]], T_col[[i]],K_col[[i]],predicted_PP[[i]],.05)
+  s_kexp[i] <- priceminus_strike(S_col[[i]], T_col[[i]],K_col[[i]],.05)
+  c_p[i] <- callminusput(predicted_CP[[i]],predicted_PP[[i]])
+  c_p_true[i] <- callminusput(CP[i],PP[i])
+}
+cbind(c_p_true,c_p,s_kexp)
+
+#make data frame
+dt <- list(S = S_col,Time = T_col/365, K = K_col,
+            Call = CP, Put = PP, Predict.CP = predicted_CP,
+            Predict.PP = predicted_PP,Call.Minus.Put = c_p_true,
+           Call.Minus.Put.Predicted = c_p, Price.Minus.Strike = s_kexp)
+dff <- df <- as.data.frame(do.call(cbind,dt))
+
+#graphics
+ggplot(dff)+
+  geom_point(aes(x = as.numeric(Call.Minus.Put),y = as.numeric(Price.Minus.Strike), color = "red"))+
+  geom_point(aes(x = as.numeric(Call.Minus.Put.Predicted),y = as.numeric(Price.Minus.Strike), color = "purple"))+
+  labs(x = "Call Price Minus Put Price", y = " Put Price Minus Strike Price", title = " Put - Call Parity")+ 
+  theme_clean() + scale_color_manual(values = c(red = "red",purple = "purple"),name = "Put-Call Parity", labels = c("Call - Put","Call - Put (Predicted)" ))
+```
+
+From here, computing the Call Price of Bitcoin and the Put Price of Bitcoin using the data _Option Prices from Derebit_ can be compared to the Call Price and Put Price using the Black-Scholes-Merton pricing formula. The pricing formulas for Call Options and Put Options are as follows. Let$c(S,T)$ denote the price of a Call Option and let  $p(S,T)$ denote the price of a Put Option, then the pricing formula for the Call Option and Put option are:
+$$c(S,T) = S \cdot N(d_1) - K\cdot e^{-r(T-t)}N(d_2)$$
+$$p(S,T) = -S\cdot N(-d_1)+K\cdot e^{-r(T-t)}N(-d_2)$$
+Let the following hold true.
+$$ d_1 = \frac{ln(\frac{S}{K})+(r+\frac{1}{2}\sigma^2)(T-t)}{\sigma \sqrt{(T-t)}}$$
+$$d_2 = d_1 - \sigma \sqrt{(T-t)}$$
+$$N \sim N(0,1)$$
+The Call Option Prices and the Put Option Prices were calculated through using the _Option Prices from Derebit_ data and the Black-Scholes-Merton pricing formula. The values for the Call and Put Options calculated using the Black-Scholes-Merton pricing formula are represented in the table below. The prices for the Black-Scholes-Merton Call Option are denoted in the table as "BSM.Call.Option", and the prices for the Black-Scholes-Merton Put Option are denoted in the table as "BSM.Put.Option". Due to the length of the table the first five rows of calculation are shown, and the last five rows of the calculations are shown. 
+```{r,echo=FALSE,warning=FALSE,error=FALSE,message=FALSE}
+#Packages
+library('pins')
+library('skimr')
+library("ragtop")
+library('ggplot2')
+library("ggthemes")
+
+#loading the data
+library('readxl')
+Options_Data_Derebit_Compiled <- read_excel("Options_Data_Derebit_Compiled.xlsx")
+
+#Renaming Two Columns
+colnames(Options_Data_Derebit_Compiled)[5] <- 'USD Call Price'
+colnames(Options_Data_Derebit_Compiled)[7] <- "USD Put Price"
+colnames(Options_Data_Derebit_Compiled)
+
+#declaring variables
+S_col <- Options_Data_Derebit_Compiled[[1]]
+T_col <- Options_Data_Derebit_Compiled[[2]]/365
+K_col <- Options_Data_Derebit_Compiled[[3]]
+CP <- Options_Data_Derebit_Compiled[[5]]
+PP <- Options_Data_Derebit_Compiled[[7]]
+predicted_CP <- rep(0,nrow(Options_Data_Derebit_Compiled))
+predicted_PP <- rep(0,nrow(Options_Data_Derebit_Compiled))
+
+#Computing prices of calls and puts
+#call options from the data set
+for (i in 1:77) {
+  predicted_CP[i] <- blackscholes(1,S0=S_col[i], K = K_col[i], r = 0.05, time = T_col[i],vola = 1)
+}
+
+#put options from the data set
+for (j in 1:77) {
+  predicted_PP[j] <- blackscholes(-1,S0 = S_col[j],K = K_col[j],r = 0.05, time = T_col[j],vola = 1)
+}
+
+
+#putting lists into a cumulative list
+dta <- list(S = S_col,Time = T_col/365, K = K_col,
+            Call = CP, Put = PP, Predict.CP = predicted_CP,
+            Predict.PP = predicted_PP)
+#making lists into a data set
+df <- as.data.frame(do.call(cbind,dta))
+colnames(df)[6] <- "BSM.Call.Price"
+colnames(df)[7] <- "BSM.Put.Price"
+
+knitr::kable(head(df))
+knitr::kable(tail(df))
+
+```
+To have a complete visualization of the relationship between the Call Option Prices from _Option Prices from Derebit_ and the the Black-Scholes-Menton Call Option pricing formula, and a visualization of the Put Option Prices from _Option Prices from Derebit_ and the Black-Scholes-Menton Put Option pricing formula the visualization of the graph shows the relationship between the compared quantities. Generally, the Call Option Pricing for Bitcoin and the Black-Scholes-Merton Call Option Pricing formula have the same trends, where as the strike price gets larger the value of the option becomes less in both the data and computationally. Similarly, for the Put Option Pricing for Bitcoin, generally, as the strike price increases the option price also increases, however, in observation, the Put Option prices from the data set see a drastic drop in various spots throughout the graph violating the general trend observed. 
+```{r,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE}
+#Packages
+library('pins')
+library('skimr')
+library("ragtop")
+library('ggplot2')
+library("ggthemes")
+
+#loading the data
+library('readxl')
+Options_Data_Derebit_Compiled <- read_excel("Options_Data_Derebit_Compiled.xlsx")
+
+#Renaming Two Columns
+colnames(Options_Data_Derebit_Compiled)[5] <- 'USD Call Price'
+colnames(Options_Data_Derebit_Compiled)[7] <- "USD Put Price"
+colnames(Options_Data_Derebit_Compiled)
+
+#declaring variables
+S_col <- Options_Data_Derebit_Compiled[[1]]
+T_col <- Options_Data_Derebit_Compiled[[2]]/365
+K_col <- Options_Data_Derebit_Compiled[[3]]
+CP <- Options_Data_Derebit_Compiled[[5]]
+PP <- Options_Data_Derebit_Compiled[[7]]
+predicted_CP <- rep(0,nrow(Options_Data_Derebit_Compiled))
+predicted_PP <- rep(0,nrow(Options_Data_Derebit_Compiled))
+
+#Computing prices of calls and puts
+#call options from the data set
+for (i in 1:77) {
+  predicted_CP[i] <- blackscholes(1,S0=S_col[i], K = K_col[i], r = 0.05, time = T_col[i],vola = 1)
+}
+
+#put options from the data set
+for (j in 1:77) {
+  predicted_PP[j] <- blackscholes(-1,S0 = S_col[j],K = K_col[j],r = 0.05, time = T_col[j],vola = 1)
+}
+
+
+#putting lists into a cumulative list
+dta <- list(S = S_col,Time = T_col/365, K = K_col,
+            Call = CP, Put = PP, Predict.CP = predicted_CP,
+            Predict.PP = predicted_PP)
+#making lists into a data set
+df <- as.data.frame(do.call(cbind,dta))
+colnames(df)[6] <- "BSM.Call.Price"
+colnames(df)[7] <- "BSM.Put.Price"
+
+#graphics
+ggplot(df) +
+  geom_point(aes(x=as.numeric(K),y=as.numeric(BSM.Call.Price),color = "red"))+ 
+  geom_point(aes(x=as.numeric(K),y=as.numeric(Call),color = "orange"))+
+  geom_point(aes(x=as.numeric(K),y=as.numeric(Put),color = "purple"))+
+  geom_point(aes(x=as.numeric(K),y=as.numeric(BSM.Put.Price), color = "blue"))+
+  labs(x = "Strike Price", y = " Option Price", title = " Option Prices versus Black-Scholes-Merton Pricing")+
+  theme_clean() + scale_color_manual(values = c(red = "red",orange = "orange",purple = "purple",blue = "blue"),name = "BTC Price", labels = c("BSM Call Option","Call Option", "Put Option","BSM Put Option" )) 
+
+```
+
+\section{Implied Volatility}
+With the analytically and experimental prices of the Put and Call Options, calculating the implied volatility of the data set, _Option Prices from Derebit_ , will provide the expected volatility of the stock over an interval. The implied volatility is unique to each stock. Stocks with short intervals are less sensitive to implied volatility, and stocks with longer timer intervals are more sensitive. The change in volatility rates in the market are determined by many factors, however, a direct influence is supply and demand  of the options. When demand is high, the implied volatility will rise with the level of demand. When the demand for an option is low, the implied volatility of the option will also be low ultimately effecting the price of the option. Below are the experimental implied volatility rates of the Call and Put Options for Bitcoin (BTC). Looking at the four different time intervals from the data, there are similar trends. For each plot, separated by the time intervals in which the call and put options expire, there are more obvious and less obvious signs of a volatility smile for the call and put options. The volatility smile show the changes in implied volatility as the options moves from either In The Money or Out Of The Money. The low point of the volatility smile tends to be usually when the option is At The Money. The volatility smile is important because, the Black-Scholes-Merton pricing formula has the implied volatility curve as flat, and that is not the case for options with high implied volatility. 
+```{r,echo=FALSE,message=FALSE,error=FALSE,warning=FALSE,results=FALSE}
+#Packages
+library('derivmkts')
+#Packages
+library('pins')
+library('skimr')
+library("ragtop")
+library('ggplot2')
+library("ggthemes")
+
+#loading the data
+library('readxl')
+Options_Data_Derebit_Compiled <- read_excel("Options_Data_Derebit_Compiled.xlsx")
+
+#Renaming Two Columns
+colnames(Options_Data_Derebit_Compiled)[5] <- 'USD Call Price'
+colnames(Options_Data_Derebit_Compiled)[7] <- "USD Put Price"
+colnames(Options_Data_Derebit_Compiled)
+
+#declaring variables
+S_col <- Options_Data_Derebit_Compiled[[1]]
+T_col <- Options_Data_Derebit_Compiled[[2]]/365
+K_col <- Options_Data_Derebit_Compiled[[3]]
+CP <- Options_Data_Derebit_Compiled[[5]]
+PP <- Options_Data_Derebit_Compiled[[7]]
+
+#Implied volatility 
+IVC <- rep(0,length(K_col))
+IVP<- rep(0,length(K_col))
+for (i in 1:length(K_col)) {
+  IVC[i] <- bscallimpvol(S_col[[i]],K_col[[i]],.05,T_col[[i]],0,CP[i])
+  IVP[i] <- bsputimpvol(S_col[[i]],K_col[[i]],.05,T_col[[i]],0,PP[i])
+}
+IVC<- na.omit(as.numeric(IVC))
+IVP<- na.omit(as.numeric(IVP))
+T_col <- na.omit(as.numeric(T_col))
+
+#Adding columns to data frame
+data <- list(S = S_col,Time = T_col/365, K = K_col,
+            Call = CP, Put = PP, IV.Call = IVC, IV.Put = IVP)
+df1 <- as.data.frame(do.call(cbind,data))
+
+#Graphics
+ggplot(df1) + 
+  geom_point(aes(x = K, y = IV.Call,  color = "red"))+
+  geom_point(aes(x = K, y = IV.Put,   color = "purple"))+ 
+  labs(x = "Strike Price", y = "Implied Volatility", title = "Implied Volatility of Call and Put Options of BTC")+ theme_clean()+
+  scale_color_manual(values = c(red = "red",purple = "purple"),labels = c("IV Call Option","IV Put Option"),name = "IV Rates")+
+  facet_wrap(vars(Time),nrow = 3)
+```
+
+\section{Conclusion}
+The  _Option Prices from Derebit_ show that the Black-Scholes-Menton pricing formula is not an accurate representation of the Bitcoin Call and Put Options on the specified time intervals. Historical Analysis provided insight in the similarities and differences the Black-Scholes-Menton pricing formula provided with the data from _Option Prices from Derebit_ provided in the analysis above. 
+
+Since the experimental and analytically data were different, analyzing the implied volatility was an appropriate step to see how volatile the Bitcoin Options were on the specified time intervals. The volatility smiles seen in the plots previously provide greater understanding that the Black-Scholes-Menton pricing formula is not an appropriate form of pricing the Bitcoin Options. 
+
+The direction this analysis moves is to create a more accurate model and representation of the Bitcoin Options that enable for a better understanding of the Bitcoin Options and their high volatility in the market. 
